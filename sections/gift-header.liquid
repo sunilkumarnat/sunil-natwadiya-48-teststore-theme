@@ -1,7 +1,10 @@
 {% comment %}
   Gift Header — built from scratch for the Figma "Test for Candidates" hand-off.
-  A dismissible promo bar (logo / announcement / CTA) rendered globally via the header group,
-  separate from the Gift Guide Banner section so it appears above every page, not just one.
+  A promo bar (logo / announcement / CTA) rendered globally via the header group, separate from
+  the Gift Guide Banner section so it appears above every page, not just one. On desktop the
+  whole bar is always visible inline. On mobile it behaves like a menu toggle: the announcement
+  + CTA are collapsed behind a "+" trigger next to the logo, closed by default on every page
+  load, and open/close on tap — no dismissal state is remembered between loads.
 {% endcomment %}
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +22,14 @@
 >
   <div class="gift-header__bar">
     <div class="gift-header__row gift-header__row--top">
-      <button type="button" class="gift-header__dismiss" data-gift-header-dismiss aria-label="Dismiss">
+      <button
+        type="button"
+        class="gift-header__toggle"
+        data-gift-header-toggle
+        aria-expanded="false"
+        aria-controls="GiftHeaderContent-{{ section.id }}"
+        aria-label="Toggle gift offer"
+      >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
         </svg>
@@ -27,7 +37,7 @@
       <p class="gift-header__logo">{{ section.settings.logo_text }}</p>
     </div>
 
-    <div class="gift-header__row gift-header__row--bottom">
+    <div class="gift-header__row gift-header__row--bottom" id="GiftHeaderContent-{{ section.id }}">
       {% if section.settings.announcement_text != blank %}
         <p class="gift-header__announcement">
           <span class="gift-header__announcement-desktop">{{ section.settings.announcement_text }}</span>
@@ -54,15 +64,6 @@
   </div>
 </div>
 
-<script>
-  (function () {
-    var bar = document.currentScript.previousElementSibling;
-    if (bar && sessionStorage.getItem('giftHeaderDismissed') === '1') {
-      bar.hidden = true;
-    }
-  })();
-</script>
-
 <script src="{{ 'gift-header.js' | asset_url }}" type="module"></script>
 
 {% stylesheet %}
@@ -85,13 +86,22 @@
     display: contents;
   }
 
-  .gift-header__dismiss {
+  .gift-header__toggle {
     display: none;
     padding: 0;
     border: none;
     background: transparent;
     color: var(--gift-dark, #000000);
     cursor: pointer;
+  }
+
+  .gift-header__toggle svg {
+    transition: transform 0.2s ease;
+    transform: rotate(45deg);
+  }
+
+  .gift-header__toggle[aria-expanded='true'] svg {
+    transform: rotate(0deg);
   }
 
   .gift-header__logo {
@@ -190,9 +200,16 @@
       align-items: center;
       gap: 12px;
       text-align: center;
+      /* Closed by default on every page load — no state is remembered between loads. */
+      display: none;
     }
 
-    .gift-header__dismiss {
+    .gift-header__bar[data-expanded='true'] .gift-header__row--bottom {
+      display: flex;
+      padding-top: 4px;
+    }
+
+    .gift-header__toggle {
       display: inline-flex;
     }
 
