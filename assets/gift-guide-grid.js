@@ -146,7 +146,15 @@ class GiftGuidePopup {
     const wrap = this.dialog.querySelector('[data-gift-popup-options]');
     wrap.innerHTML = '';
 
-    (this.optionsWithValues || []).forEach((option) => {
+    // Color renders first regardless of the store's raw option order, matching the design.
+    const orderedOptions = [...(this.optionsWithValues || [])].sort((a, b) => {
+      const aIsColor = COLOR_OPTION_PATTERN.test(a.name);
+      const bIsColor = COLOR_OPTION_PATTERN.test(b.name);
+      if (aIsColor === bIsColor) return 0;
+      return aIsColor ? -1 : 1;
+    });
+
+    orderedOptions.forEach((option) => {
       const group = document.createElement('div');
       group.className = 'gift-popup__option';
 
