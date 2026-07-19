@@ -1,6 +1,7 @@
 {% comment %}
   Gift Guide Banner — built from scratch for the Figma "Test for Candidates" hand-off.
-  Structure: utility bar (logo / announcement / promo button) -> illustrated hero -> sustainability bar.
+  Structure: illustrated hero -> sustainability bar. The logo/announcement utility bar
+  lives in the separate `gift-header` section (rendered globally via the header group).
   All copy below is editable from the theme customizer.
 {% endcomment %}
 
@@ -17,28 +18,6 @@
   "
   data-testid="gift-guide-banner"
 >
-  <div class="gift-banner__utility-bar">
-    <p class="gift-banner__logo">{{ section.settings.logo_text }}</p>
-
-    {% if section.settings.announcement_text != blank %}
-      <p class="gift-banner__announcement">{{ section.settings.announcement_text }}</p>
-    {% endif %}
-
-    {% if section.settings.announcement_button_label != blank %}
-      <a
-        href="{{ section.settings.announcement_button_link | default: '#' }}"
-        class="gift-banner-cta gift-banner-cta--light"
-      >
-        <span class="gift-banner-cta__fill" aria-hidden="true">
-          <span class="gift-banner-cta__fill-label">{{ section.settings.announcement_button_label }}</span>
-          {% render 'gift-guide-arrow-icon' %}
-        </span>
-        <span class="gift-banner-cta__label">{{ section.settings.announcement_button_label }}</span>
-        {% render 'gift-guide-arrow-icon' %}
-      </a>
-    {% endif %}
-  </div>
-
   <div class="gift-banner__hero">
     <div class="gift-banner__illustration" aria-hidden="true">
       <img src="{{ 'gift-guide-illustration.svg' | asset_url }}" alt="" width="1440" height="780" loading="eager">
@@ -70,7 +49,7 @@
   </div>
 
   {% if section.settings.sustainability_text != blank %}
-    <div class="gift-banner__utility-bar gift-banner__utility-bar--bottom">
+    <div class="gift-banner__sustainability-bar">
       <p class="gift-banner__sustainability">
         <span class="gift-banner__sustainability-desktop">{{ section.settings.sustainability_text }}</span>
         <span class="gift-banner__sustainability-mobile">
@@ -92,36 +71,13 @@
     overflow: hidden;
   }
 
-  .gift-banner__utility-bar {
+  .gift-banner__sustainability-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 24px;
+    justify-content: center;
     background: var(--gift-soft-bg);
     padding: 10px 50px;
-    min-height: 64px;
-  }
-
-  .gift-banner__utility-bar--bottom {
     min-height: 34px;
-    padding: 10px 50px;
-    justify-content: center;
-  }
-
-  .gift-banner__logo {
-    margin: 0;
-    font-weight: 600;
-    font-size: 1rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .gift-banner__announcement {
-    margin: 0;
-    font-size: 1rem;
-    text-align: center;
-    flex: 1;
   }
 
   .gift-banner__sustainability {
@@ -269,16 +225,7 @@
   }
 
   @media screen and (max-width: 749px) {
-    .gift-banner__utility-bar {
-      padding: 16px;
-    }
-
-    .gift-banner__announcement,
-    .gift-banner__utility-bar > .gift-banner-cta {
-      display: none;
-    }
-
-    .gift-banner__utility-bar--bottom {
+    .gift-banner__sustainability-bar {
       padding: 8px 16px;
     }
 
@@ -330,33 +277,6 @@
 {
   "name": "Gift Guide Banner",
   "settings": [
-    {
-      "type": "header",
-      "content": "Utility bar"
-    },
-    {
-      "type": "text",
-      "id": "logo_text",
-      "label": "Logo text",
-      "default": "Tisso Vison"
-    },
-    {
-      "type": "text",
-      "id": "announcement_text",
-      "label": "Announcement text",
-      "default": "Find the ideal gift for your loved ones."
-    },
-    {
-      "type": "text",
-      "id": "announcement_button_label",
-      "label": "Announcement button label",
-      "default": "Choose Gift"
-    },
-    {
-      "type": "url",
-      "id": "announcement_button_link",
-      "label": "Announcement button link"
-    },
     {
       "type": "header",
       "content": "Hero"

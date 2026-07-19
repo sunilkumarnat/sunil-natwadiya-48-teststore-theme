@@ -1,0 +1,276 @@
+{% comment %}
+  Gift Header — built from scratch for the Figma "Test for Candidates" hand-off.
+  A dismissible promo bar (logo / announcement / CTA) rendered globally via the header group,
+  separate from the Gift Guide Banner section so it appears above every page, not just one.
+{% endcomment %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;600&display=swap" rel="stylesheet">
+
+<div
+  class="gift-header"
+  style="
+    --gift-accent: {{ section.settings.accent_color }};
+    --gift-dark: {{ section.settings.dark_color }};
+    --gift-soft-bg: {{ section.settings.soft_bg_color }};
+  "
+  data-testid="gift-header"
+>
+  <div class="gift-header__bar">
+    <div class="gift-header__row gift-header__row--top">
+      <button type="button" class="gift-header__dismiss" data-gift-header-dismiss aria-label="Dismiss">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </button>
+      <p class="gift-header__logo">{{ section.settings.logo_text }}</p>
+    </div>
+
+    <div class="gift-header__row gift-header__row--bottom">
+      {% if section.settings.announcement_text != blank %}
+        <p class="gift-header__announcement">
+          <span class="gift-header__announcement-desktop">{{ section.settings.announcement_text }}</span>
+          <span class="gift-header__announcement-mobile">
+            {{ section.settings.announcement_text_mobile | default: section.settings.announcement_text }}
+          </span>
+        </p>
+      {% endif %}
+
+      {% if section.settings.announcement_button_label != blank %}
+        <a
+          href="{{ section.settings.announcement_button_link | default: '#' }}"
+          class="gift-header-cta gift-header-cta--light"
+        >
+          <span class="gift-header-cta__fill" aria-hidden="true">
+            <span class="gift-header-cta__fill-label">{{ section.settings.announcement_button_label }}</span>
+            {% render 'gift-guide-arrow-icon' %}
+          </span>
+          <span class="gift-header-cta__label">{{ section.settings.announcement_button_label }}</span>
+          {% render 'gift-guide-arrow-icon' %}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var bar = document.currentScript.previousElementSibling;
+    if (bar && sessionStorage.getItem('giftHeaderDismissed') === '1') {
+      bar.hidden = true;
+    }
+  })();
+</script>
+
+<script src="{{ 'gift-header.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .gift-header {
+    font-family: 'Jost', sans-serif;
+    color: var(--gift-dark, #000000);
+    background: var(--gift-soft-bg, #f5f5f5);
+  }
+
+  .gift-header__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 10px 50px;
+    min-height: 64px;
+  }
+
+  .gift-header__row {
+    display: contents;
+  }
+
+  .gift-header__dismiss {
+    display: none;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--gift-dark, #000000);
+    cursor: pointer;
+  }
+
+  .gift-header__logo {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .gift-header__announcement {
+    margin: 0;
+    font-size: 1rem;
+    text-align: center;
+    flex: 1;
+  }
+
+  .gift-header__announcement-mobile {
+    display: none;
+  }
+
+  /* Shared "fill sweep" CTA button — same mechanism as the other Gift Guide sections */
+  .gift-header-cta,
+  .gift-header-cta *,
+  .gift-header-cta *::before,
+  .gift-header-cta *::after {
+    box-sizing: border-box;
+  }
+
+  .gift-header-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 24px;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-family: 'Jost', sans-serif;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .gift-header-cta__fill,
+  .gift-header-cta__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gift-header-cta__fill {
+    position: absolute;
+    inset: 0;
+    padding: 0 24px;
+    overflow: hidden;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .gift-header-cta:hover .gift-header-cta__fill {
+    clip-path: inset(0 0 0 0);
+  }
+
+  .gift-header-cta--light {
+    background: var(--gift-accent, #fff544);
+    color: var(--gift-dark, #000000);
+  }
+
+  .gift-header-cta--light .gift-header-cta__fill {
+    background: var(--gift-dark, #000000);
+    color: var(--gift-accent, #fff544);
+  }
+
+  @media screen and (max-width: 749px) {
+    .gift-header__bar {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 12px 16px;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .gift-header__row {
+      display: flex;
+    }
+
+    .gift-header__row--top {
+      align-items: center;
+      gap: 12px;
+    }
+
+    .gift-header__row--bottom {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .gift-header__dismiss {
+      display: inline-flex;
+    }
+
+    .gift-header__announcement {
+      flex: none;
+    }
+
+    .gift-header__announcement-desktop {
+      display: none;
+    }
+
+    .gift-header__announcement-mobile {
+      display: inline;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift Header",
+  "settings": [
+    {
+      "type": "text",
+      "id": "logo_text",
+      "label": "Logo text",
+      "default": "Tisso Vison"
+    },
+    {
+      "type": "text",
+      "id": "announcement_text",
+      "label": "Announcement text",
+      "default": "Find the ideal gift for your loved ones."
+    },
+    {
+      "type": "text",
+      "id": "announcement_text_mobile",
+      "label": "Announcement text (mobile override)",
+      "info": "Leave blank to reuse the text above.",
+      "default": "Get started with your \"Mi Solo\" kit"
+    },
+    {
+      "type": "text",
+      "id": "announcement_button_label",
+      "label": "Button label",
+      "default": "Choose Gift"
+    },
+    {
+      "type": "url",
+      "id": "announcement_button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent",
+      "default": "#FFF544"
+    },
+    {
+      "type": "color",
+      "id": "dark_color",
+      "label": "Dark",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "soft_bg_color",
+      "label": "Bar background",
+      "default": "#F5F5F5"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift Header"
+    }
+  ]
+}
+{% endschema %}

@@ -11,6 +11,10 @@
   "type": "header",
   "name": "t:names.header",
   "sections": {
+    "gift_header": {
+      "type": "gift-header",
+      "settings": {}
+    },
     "header_announcements_9jGBFp": {
       "type": "header-announcements",
       "blocks": {
@@ -130,6 +134,7 @@
     }
   },
   "order": [
+    "gift_header",
     "header_announcements_9jGBFp",
     "header_section"
   ]
