@@ -21,12 +21,10 @@ document.querySelectorAll('[data-testid="gift-header"]').forEach((header) => {
     if (!initiallyExpanded) {
       content.style.height = '0px';
       content.style.opacity = '0';
-      content.style.padding = '0';
       content.hidden = false; // we control visibility via height/opacity now
     } else {
       content.style.height = 'auto';
       content.style.opacity = '1';
-      content.style.padding = '15px 10px';
     }
   }
 
@@ -44,12 +42,10 @@ document.querySelectorAll('[data-testid="gift-header"]').forEach((header) => {
       content.offsetHeight;
       content.style.height = '0px';
       content.style.opacity = '0';
-      content.style.padding = '0';
     } else {
       // Expanding: animate from 0 to measured scrollHeight
       content.style.height = content.scrollHeight + 'px';
       content.style.opacity = '1';
-      content.style.padding = '15px 10px';
 
       // After the transition ends, let height go back to auto
       // so content can resize naturally (e.g. window resize, dynamic content)

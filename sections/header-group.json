@@ -13,7 +13,16 @@
   "sections": {
     "gift_header": {
       "type": "gift-header",
-      "settings": {}
+      "settings": {
+        "logo_text": "Tisso Vison",
+        "announcement_text": "Find the ideal gift for your loved ones.",
+        "announcement_text_mobile": "Get started with your \"Mi Solo\" kit",
+        "announcement_button_label": "Choose Gift",
+        "announcement_button_link": "",
+        "accent_color": "#fff544",
+        "dark_color": "#000000",
+        "soft_bg_color": "#F7F7F7"
+      }
     },
     "header_announcements_9jGBFp": {
       "type": "header-announcements",
@@ -86,7 +95,6 @@
           "blocks": {}
         }
       },
-      "disabled": true,
       "settings": {
         "logo_position": "left",
         "menu_position": "left",
