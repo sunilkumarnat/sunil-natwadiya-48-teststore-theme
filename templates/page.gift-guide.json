@@ -1,20 +1,77 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "gift_guide_banner": {
-      "type": "gift-guide-banner"
+      "type": "gift-guide-banner",
+      "settings": {}
     },
     "gift_guide_grid": {
       "type": "gift-guide-grid",
       "blocks": {
-        "product_1": { "type": "product", "settings": { "hotspot_x": 62, "hotspot_y": 56 } },
-        "product_2": { "type": "product", "settings": { "hotspot_x": 85, "hotspot_y": 53 } },
-        "product_3": { "type": "product", "settings": { "hotspot_x": 63, "hotspot_y": 21 } },
-        "product_4": { "type": "product", "settings": { "hotspot_x": 72, "hotspot_y": 19 } },
-        "product_5": { "type": "product", "settings": { "hotspot_x": 52, "hotspot_y": 26 } },
-        "product_6": { "type": "product", "settings": { "hotspot_x": 76, "hotspot_y": 39 } }
+        "product_1": {
+          "type": "product",
+          "settings": {
+            "hotspot_x": 62,
+            "hotspot_y": 56
+          }
+        },
+        "product_2": {
+          "type": "product",
+          "settings": {
+            "hotspot_x": 85,
+            "hotspot_y": 53
+          }
+        },
+        "product_3": {
+          "type": "product",
+          "settings": {
+            "hotspot_x": 63,
+            "hotspot_y": 21
+          }
+        },
+        "product_4": {
+          "type": "product",
+          "settings": {
+            "hotspot_x": 72,
+            "hotspot_y": 19
+          }
+        },
+        "product_5": {
+          "type": "product",
+          "settings": {
+            "hotspot_x": 52,
+            "hotspot_y": 26
+          }
+        },
+        "product_6": {
+          "type": "product",
+          "settings": {
+            "hotspot_x": 76,
+            "hotspot_y": 39
+          }
+        }
       },
-      "block_order": ["product_1", "product_2", "product_3", "product_4", "product_5", "product_6"]
+      "block_order": [
+        "product_1",
+        "product_2",
+        "product_3",
+        "product_4",
+        "product_5",
+        "product_6"
+      ],
+      "settings": {}
     }
   },
-  "order": ["gift_guide_banner", "gift_guide_grid"]
+  "order": [
+    "gift_guide_banner",
+    "gift_guide_grid"
+  ]
 }
