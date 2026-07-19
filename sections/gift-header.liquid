@@ -3,8 +3,9 @@
   A promo bar (logo / announcement / CTA) rendered globally via the header group, separate from
   the Gift Guide Banner section so it appears above every page, not just one. On desktop the
   whole bar is always visible inline. On mobile it behaves like a menu toggle: the announcement
-  + CTA are collapsed behind a "+" trigger next to the logo, closed by default on every page
-  load, and open/close on tap — no dismissal state is remembered between loads.
+  + CTA are collapsed behind a burger trigger (morphing to an ×), with the logo centered,
+  closed by default on every page load, and open/close on tap — no dismissal state is
+  remembered between loads.
 {% endcomment %}
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,8 +31,10 @@
         aria-controls="GiftHeaderContent-{{ section.id }}"
         aria-label="Toggle gift offer"
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <line class="gift-header__toggle-line gift-header__toggle-line--top" x1="0" y1="1" x2="18" y2="1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          <line class="gift-header__toggle-line gift-header__toggle-line--middle" x1="0" y1="7" x2="18" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          <line class="gift-header__toggle-line gift-header__toggle-line--bottom" x1="0" y1="13" x2="18" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
         </svg>
       </button>
       <p class="gift-header__logo">{{ section.settings.logo_text }}</p>
@@ -95,13 +98,22 @@
     cursor: pointer;
   }
 
-  .gift-header__toggle svg {
-    transition: transform 0.2s ease;
-    transform: rotate(45deg);
+  .gift-header__toggle-line {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.25s ease, opacity 0.2s ease;
   }
 
-  .gift-header__toggle[aria-expanded='true'] svg {
-    transform: rotate(0deg);
+  .gift-header__toggle[aria-expanded='true'] .gift-header__toggle-line--top {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .gift-header__toggle[aria-expanded='true'] .gift-header__toggle-line--middle {
+    opacity: 0;
+  }
+
+  .gift-header__toggle[aria-expanded='true'] .gift-header__toggle-line--bottom {
+    transform: translateY(-6px) rotate(-45deg);
   }
 
   .gift-header__logo {
@@ -191,8 +203,9 @@
     }
 
     .gift-header__row--top {
+      position: relative;
+      justify-content: center;
       align-items: center;
-      gap: 12px;
     }
 
     .gift-header__row--bottom {
@@ -211,6 +224,10 @@
 
     .gift-header__toggle {
       display: inline-flex;
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .gift-header__announcement {
