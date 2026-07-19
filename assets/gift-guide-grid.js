@@ -14,6 +14,45 @@ import { CartLinesUpdateEvent } from '@shopify/events';
 
 const COLOR_OPTION_PATTERN = /colou?r/i;
 
+// Maps common color option values to a real swatch color. Multi-word values (e.g. "Navy Blue")
+// are matched by their last word so specific shades still resolve to a sensible base color.
+const COLOR_NAME_TO_HEX = {
+  black: '#000000',
+  white: '#ffffff',
+  grey: '#8a8a8a',
+  gray: '#8a8a8a',
+  silver: '#c0c0c0',
+  red: '#c0392b',
+  maroon: '#800000',
+  burgundy: '#7b1f2b',
+  pink: '#e5989b',
+  orange: '#e07b39',
+  yellow: '#f1c40f',
+  gold: '#d4af37',
+  green: '#3a7d44',
+  olive: '#708238',
+  khaki: '#c3b091',
+  teal: '#128277',
+  blue: '#2e5eaa',
+  navy: '#1b2a4a',
+  purple: '#6c3483',
+  lavender: '#b497bd',
+  brown: '#6f4e37',
+  tan: '#d2b48c',
+  beige: '#e8dcc4',
+  cream: '#f5f0e1',
+  denim: '#4a6c8c',
+};
+
+/**
+ * @param {string} colorName
+ * @returns {string|null}
+ */
+function colorNameToHex(colorName) {
+  const lastWord = colorName.trim().split(/\s+/).pop().toLowerCase();
+  return COLOR_NAME_TO_HEX[lastWord] || null;
+}
+
 /**
  * @param {string|{src:string}|null|undefined} image
  * @returns {string}
@@ -186,6 +225,8 @@ class GiftGuidePopup {
       button.className = 'gift-popup__swatch';
       button.textContent = value;
       button.setAttribute('aria-pressed', String(this.selectedOptions[option.name] === value));
+      const swatchColor = colorNameToHex(value);
+      if (swatchColor) button.style.setProperty('--swatch-color', swatchColor);
       button.addEventListener('click', () => {
         this.selectedOptions[option.name] = value;
         list.querySelectorAll('.gift-popup__swatch').forEach((el) => {

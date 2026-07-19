@@ -406,7 +406,10 @@
   }
 
   .gift-popup__swatch[aria-pressed='true'] {
-    box-shadow: inset 3px 0 0 var(--gift-dark);
+    /* The left accent bar shows the option's own color; the faint inset ring keeps the
+       selected state visible even for very light colors like white. */
+    background: #f5f5f5;
+    box-shadow: inset 3px 0 0 var(--swatch-color, var(--gift-dark));
   }
 
   .gift-popup__select {
