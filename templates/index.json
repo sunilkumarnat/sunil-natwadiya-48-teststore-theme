@@ -299,10 +299,6 @@
       "type": "gift-guide-banner",
       "name": "Gift Guide Banner",
       "settings": {
-        "logo_text": "Tisso Vison",
-        "announcement_text": "Find the ideal gift for your loved ones.",
-        "announcement_button_label": "Choose Gift",
-        "announcement_button_link": "",
         "heading": "The Gift Guide",
         "description": "<p>Discover Joy: Your Ultimate Holiday Gift Destination. Explore our curated selection and find the perfect gifts to delight your loved ones this holiday season.</p>",
         "button_label": "Shop Now",
