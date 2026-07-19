@@ -1,18 +1,18 @@
 /**
- * Gift Header — dismiss button.
+ * Gift Header — mobile toggle.
  *
- * Clicking the mobile close icon hides the bar and remembers the choice for the rest of
- * the browsing session (a fresh visit, or a new tab, shows it again). The inline script in
- * sections/gift-header.liquid handles the initial paint so a previously-dismissed bar
- * never flashes visible before this module loads.
+ * On mobile the announcement + CTA are collapsed behind a "+" trigger next to the logo,
+ * matching a standard menu-toggle disclosure: closed by default on every page load, opens
+ * and closes on tap. Nothing is persisted between loads — unlike a "dismiss" pattern, there's
+ * no memory of a previous state to restore, so no pre-hydration script is needed here.
  */
-const STORAGE_KEY = 'giftHeaderDismissed';
+document.querySelectorAll('[data-testid="gift-header"]').forEach((header) => {
+  const bar = header.querySelector('.gift-header__bar');
+  const toggleButton = header.querySelector('[data-gift-header-toggle]');
 
-document.querySelectorAll('[data-testid="gift-header"]').forEach((bar) => {
-  const dismissButton = bar.querySelector('[data-gift-header-dismiss]');
-
-  dismissButton?.addEventListener('click', () => {
-    bar.hidden = true;
-    sessionStorage.setItem(STORAGE_KEY, '1');
+  toggleButton?.addEventListener('click', () => {
+    const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+    toggleButton.setAttribute('aria-expanded', String(!isExpanded));
+    bar?.setAttribute('data-expanded', String(!isExpanded));
   });
 });

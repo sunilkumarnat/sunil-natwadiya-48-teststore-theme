@@ -89,6 +89,11 @@ class GiftGuidePopup {
 
   /** @param {object} product */
   open(product) {
+    if (!Array.isArray(product?.variants) || product.variants.length === 0) {
+      console.warn('[gift-guide-grid] Product is missing variant data, skipping quick view:', product);
+      return;
+    }
+
     this.product = product;
     this.selectedOptions = {};
 
