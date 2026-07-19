@@ -87,8 +87,8 @@
 
   <dialog class="gift-popup" data-gift-popup aria-labelledby="GiftPopupTitle-{{ section.id }}">
     <button type="button" class="gift-popup__close" data-gift-popup-close aria-label="Close">
-      <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M1 1L16 16M16 1L1 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
       </svg>
     </button>
 
@@ -298,16 +298,24 @@
 
   .gift-popup__close {
     position: absolute;
-    top: 13px;
-    right: 15px;
-    width: 17px;
-    height: 17px;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
     border: none;
     background: transparent;
     color: var(--gift-dark);
     cursor: pointer;
     z-index: 2;
+  }
+
+  .gift-popup__close svg {
+    width: 18px;
+    height: 18px;
   }
 
   .gift-popup__body {
@@ -335,6 +343,7 @@
     flex-direction: column;
     gap: 8px;
     min-width: 0;
+    padding-right: 28px;
   }
 
   .gift-popup__title {
@@ -365,40 +374,46 @@
 
   .gift-popup__option-label {
     display: block;
-    font-size: 0.875rem;
-    color: #333333;
-    margin-bottom: 4px;
+    font-size: 1rem;
+    color: var(--gift-dark);
+    margin-bottom: 8px;
   }
 
   .gift-popup__swatches {
     display: flex;
     flex-wrap: wrap;
-    background: #d9d9d9;
+    background: #ffffff;
+    border: 1px solid var(--gift-dark);
   }
 
   .gift-popup__swatch {
     flex: 1 1 auto;
     min-width: 0;
     border: none;
+    border-right: 1px solid var(--gift-dark);
     background: transparent;
-    padding: 10px 8px;
+    padding: 11px 16px;
     font-family: 'Jost', sans-serif;
-    font-size: 0.875rem;
+    font-size: 1rem;
     text-transform: capitalize;
+    text-align: left;
     cursor: pointer;
     position: relative;
   }
 
+  .gift-popup__swatch:last-child {
+    border-right: none;
+  }
+
   .gift-popup__swatch[aria-pressed='true'] {
-    background: var(--gift-dark);
-    color: #ffffff;
+    box-shadow: inset 3px 0 0 var(--gift-dark);
   }
 
   .gift-popup__select {
     width: 100%;
     height: 41px;
-    background: #d9d9d9;
-    border: none;
+    background-color: #ffffff;
+    border: 1px solid var(--gift-dark);
     padding: 0 16px;
     font-family: 'Jost', sans-serif;
     font-size: 1rem;
