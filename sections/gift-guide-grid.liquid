@@ -93,26 +93,28 @@
     </button>
 
     <div class="gift-popup__body">
-      <img class="gift-popup__image" data-gift-popup-image src="" alt="" width="120" height="140">
+      <div class="gift-popup__top">
+        <img class="gift-popup__image" data-gift-popup-image src="" alt="" width="120" height="140">
 
-      <div class="gift-popup__info">
-        <h3 class="gift-popup__title" id="GiftPopupTitle-{{ section.id }}" data-gift-popup-title></h3>
-        <p class="gift-popup__price" data-gift-popup-price></p>
-        <div class="gift-popup__description" data-gift-popup-description></div>
-
-        <div class="gift-popup__options" data-gift-popup-options></div>
-
-        <p class="gift-popup__error" data-gift-popup-error hidden></p>
-
-        <button type="button" class="gift-popup-cta gift-popup-cta--dark gift-popup__add" data-gift-popup-add>
-          <span class="gift-popup-cta__fill" aria-hidden="true">
-            <span class="gift-popup-cta__fill-label" data-gift-popup-add-label>Add to cart</span>
-            {% render 'gift-guide-arrow-icon' %}
-          </span>
-          <span class="gift-popup-cta__label" data-gift-popup-add-label>Add to cart</span>
-          {% render 'gift-guide-arrow-icon' %}
-        </button>
+        <div class="gift-popup__header">
+          <h3 class="gift-popup__title" id="GiftPopupTitle-{{ section.id }}" data-gift-popup-title></h3>
+          <p class="gift-popup__price" data-gift-popup-price></p>
+          <div class="gift-popup__description" data-gift-popup-description></div>
+        </div>
       </div>
+
+      <div class="gift-popup__options" data-gift-popup-options></div>
+
+      <p class="gift-popup__error" data-gift-popup-error hidden></p>
+
+      <button type="button" class="gift-popup-cta gift-popup-cta--dark gift-popup__add" data-gift-popup-add>
+        <span class="gift-popup-cta__fill" aria-hidden="true">
+          <span class="gift-popup-cta__fill-label" data-gift-popup-add-label>Add to cart</span>
+          {% render 'gift-guide-arrow-icon' %}
+        </span>
+        <span class="gift-popup-cta__label" data-gift-popup-add-label>Add to cart</span>
+        {% render 'gift-guide-arrow-icon' %}
+      </button>
     </div>
   </dialog>
 
@@ -310,8 +312,14 @@
 
   .gift-popup__body {
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 16px;
     padding: 20px;
+  }
+
+  .gift-popup__top {
+    display: flex;
+    gap: 8px;
   }
 
   .gift-popup__image {
@@ -322,7 +330,7 @@
     background: #f5f5f5;
   }
 
-  .gift-popup__info {
+  .gift-popup__header {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -436,7 +444,7 @@
       max-width: 100%;
     }
 
-    .gift-popup__body {
+    .gift-popup__top {
       flex-direction: column;
     }
 
