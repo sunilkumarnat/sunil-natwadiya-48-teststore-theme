@@ -1,18 +1,21 @@
 /**
  * Gift Guide Grid — quick-view popup + add-to-cart.
  *
- * Built from scratch for the new "Gift Guide Grid" section. Every product's
- * variants/price/description are read from that product's own JSON payload
- * (rendered server-side per block), so nothing here is hardcoded per product.
+ * Built from scratch for the new "Gift Guide Grid" section. The popup's body (image, title,
+ * price, description, options, add-to-cart button) is real server-rendered Liquid: on open, and
+ * again on every option change, this fetches sections/gift-popup-content.liquid for the current
+ * product/variant via Shopify's Section Rendering API and swaps it in — nothing about a
+ * product's own markup is templated here in JS. The only client-side data kept per product is a
+ * small variant-id lookup (id + option values), needed to resolve which variant to fetch next
+ * when an option changes, since the Section Rendering API selects a variant by id, not by option
+ * values.
  *
- * The only piece of existing theme code reused, per the project's rules, is the
- * cart-drawer integration: `@shopify/events` is the theme's own event bus, and
- * dispatching `CartLinesUpdateEvent` is what makes the existing cart drawer
- * open/update itself after we add items — the same contract `product-form.js` uses.
+ * The only piece of existing theme code reused, per the project's rules, is the cart-drawer
+ * integration: `@shopify/events` is the theme's own event bus, and dispatching
+ * `CartLinesUpdateEvent` is what makes the existing cart drawer open/update itself after we add
+ * items — the same contract `product-form.js` uses.
  */
 import { CartLinesUpdateEvent } from '@shopify/events';
-
-const COLOR_OPTION_PATTERN = /colou?r/i;
 
 // Maps common color option values to a real swatch color. Multi-word values (e.g. "Navy Blue")
 // are matched by their last word so specific shades still resolve to a sensible base color.
@@ -45,58 +48,40 @@ const COLOR_NAME_TO_HEX = {
 };
 
 /**
- * @param {string} colorName
+ * @param {string|undefined} colorName
  * @returns {string|null}
  */
 function colorNameToHex(colorName) {
-  const lastWord = colorName.trim().split(/\s+/).pop().toLowerCase();
+  const words = (colorName || '').trim().split(/\s+/);
+  const lastWord = (words[words.length - 1] || '').toLowerCase();
   return COLOR_NAME_TO_HEX[lastWord] || null;
 }
 
 /**
- * @param {string|{src:string}|null|undefined} image
- * @returns {string}
- */
-function imageSrc(image) {
-  if (!image) return '';
-  return typeof image === 'string' ? image : image.src || '';
-}
-
-/**
- * @param {number} cents
- * @returns {string}
- */
-function formatMoney(cents) {
-  const currency = window.Shopify?.currency?.active || 'USD';
-  const locale = document.documentElement.lang || 'en';
-  try {
-    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(cents / 100);
-  } catch {
-    return `$${(cents / 100).toFixed(2)}`;
-  }
-}
-
-/**
  * A single quick-view popup, scoped to one Gift Guide Grid section.
- * Handles rendering dynamic variant controls and the add-to-cart flow.
+ * Handles fetching the popup's rendered content and the add-to-cart flow.
  */
 class GiftGuidePopup {
   /** @param {HTMLElement} section */
   constructor(section) {
     this.section = section;
-    this.dialog = section.querySelector('[data-gift-popup]');
+    this.dialog = /** @type {HTMLDialogElement} */ (section.querySelector('[data-gift-popup]'));
+    this.body = /** @type {HTMLElement} */ (this.dialog.querySelector('[data-gift-popup-body]'));
+    /** @type {{variants: Array<{id:number, available:boolean}>}|null} */
     this.companionProduct = this.#readJson(section.querySelector('[data-gift-companion-product]'));
     this.companionTriggerValues = (section.dataset.companionTriggerValues || '')
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean);
 
-    /** @type {object|null} currently open product */
-    this.product = null;
-    /** @type {Record<string,string>} option name -> selected value */
-    this.selectedOptions = {};
-    /** @type {object|null} */
-    this.currentVariant = null;
+    /** @type {string|null} */
+    this.productUrl = null;
+    /** @type {Array<{id:number, options:string[], available:boolean}>} */
+    this.variants = [];
+    /** @type {string[]} positional selected option values, same order as each variant's `options` */
+    this.selectedOptions = [];
+    /** Guards against an older fetch resolving after a newer one has started. */
+    this.requestToken = 0;
 
     this.#bindStaticEvents();
   }
@@ -127,68 +112,50 @@ class GiftGuidePopup {
     window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' });
   }
 
+  /** @param {Element|null} [scriptEl] */
   #readJson(scriptEl) {
-    if (!scriptEl) return null;
+    if (!scriptEl?.textContent) return null;
     try {
       const data = JSON.parse(scriptEl.textContent.trim());
-      return data && Object.keys(data).length ? data : null;
+      return data && (Array.isArray(data) ? data.length : Object.keys(data).length) ? data : null;
     } catch {
       return null;
     }
   }
 
   #bindStaticEvents() {
-    this.section.querySelectorAll('[data-gift-hotspot]').forEach((button) => {
-      const productScript = button.parentElement.querySelector('[data-gift-product-json]');
-      const product = this.#readJson(productScript);
-      if (!product) return;
-      button.addEventListener('click', () => this.open(product));
+    this.section.querySelectorAll('[data-gift-hotspot]').forEach((buttonEl) => {
+      const button = /** @type {HTMLElement} */ (buttonEl);
+      const url = button.dataset.giftProductUrl;
+      const variantScript = button.parentElement?.querySelector('[data-gift-variant-map]');
+      const variants = this.#readJson(variantScript);
+      if (!url || !Array.isArray(variants) || variants.length === 0) return;
+      button.addEventListener('click', () => this.open(url, variants));
     });
 
-    this.dialog?.querySelector('[data-gift-popup-close]')?.addEventListener('click', () => this.close());
-    this.dialog?.addEventListener('click', (event) => {
+    this.dialog.querySelector('[data-gift-popup-close]')?.addEventListener('click', () => this.close());
+    this.dialog.addEventListener('click', (event) => {
       if (event.target === this.dialog) this.close();
     });
-    this.dialog?.querySelector('[data-gift-popup-add]')?.addEventListener('click', () => this.addToCart());
 
     // The dialog's native `close` event fires however it closes (our close(), Escape key,
     // backdrop click), so unlocking scroll here — rather than only in close() — catches all of them.
-    this.dialog?.addEventListener('close', () => this.#unlockScroll());
+    this.dialog.addEventListener('close', () => this.#unlockScroll());
   }
 
-  /** @param {object} product */
-  open(product) {
-    if (!Array.isArray(product?.variants) || product.variants.length === 0) {
-      console.warn('[gift-guide-grid] Product is missing variant data, skipping quick view:', product);
-      return;
-    }
+  /**
+   * @param {string} url the product's own URL
+   * @param {Array<{id:number, options:string[], available:boolean}>} variants
+   */
+  open(url, variants) {
+    const startingVariant = variants.find((variant) => variant.available) || variants[0];
+    if (!startingVariant) return;
 
-    this.product = product;
-    this.selectedOptions = {};
+    this.productUrl = url;
+    this.variants = variants;
+    this.selectedOptions = [...startingVariant.options];
 
-    // `{{ product | json }}` includes `options` (names) and `variants` (with raw option1/2/3
-    // values) but not `options_with_values` — so derive each option's value list from the
-    // variants themselves, in first-seen order.
-    this.optionsWithValues = (product.options || []).map((name, index) => {
-      const key = `option${index + 1}`;
-      const values = [];
-      product.variants.forEach((variant) => {
-        if (variant[key] && !values.includes(variant[key])) values.push(variant[key]);
-      });
-      return { name, values };
-    });
-
-    // Seed selections with the first available variant's options, falling back to the first variant.
-    const startingVariant = product.variants.find((variant) => variant.available) || product.variants[0];
-    (product.options || []).forEach((name, index) => {
-      const key = `option${index + 1}`;
-      this.selectedOptions[name] = startingVariant?.[key] ?? this.optionsWithValues[index]?.values?.[0];
-    });
-
-    this.#renderStaticFields();
-    this.#renderOptions();
-    this.#syncVariant();
-    this.#setError('');
+    this.body.innerHTML = '<p class="gift-popup__loading">Loading…</p>';
 
     this.#lockScroll();
 
@@ -197,133 +164,88 @@ class GiftGuidePopup {
     } else {
       this.dialog.setAttribute('open', '');
     }
+
+    this.#loadContent(startingVariant.id);
   }
 
   close() {
-    this.dialog?.close?.();
+    this.dialog.close?.();
   }
 
-  #renderStaticFields() {
-    const { product } = this;
-    this.dialog.querySelector('[data-gift-popup-title]').textContent = product.title;
-    this.dialog.querySelector('[data-gift-popup-description]').innerHTML = product.description || '';
-
-    const image = this.dialog.querySelector('[data-gift-popup-image]');
-    image.src = imageSrc(product.featured_image) || imageSrc(product.images?.[0]);
-    image.alt = product.title;
+  /** Finds the variant whose option values exactly match the current selection. */
+  #findVariant() {
+    return this.variants.find((variant) =>
+      variant.options.every((value, index) => value === this.selectedOptions[index])
+    );
   }
 
-  #renderOptions() {
-    const wrap = this.dialog.querySelector('[data-gift-popup-options]');
-    wrap.innerHTML = '';
+  /** @param {number} variantId */
+  async #loadContent(variantId) {
+    if (!this.productUrl) return;
 
-    // Color renders first regardless of the store's raw option order, matching the design.
-    const orderedOptions = [...(this.optionsWithValues || [])].sort((a, b) => {
-      const aIsColor = COLOR_OPTION_PATTERN.test(a.name);
-      const bIsColor = COLOR_OPTION_PATTERN.test(b.name);
-      if (aIsColor === bIsColor) return 0;
-      return aIsColor ? -1 : 1;
-    });
+    const token = ++this.requestToken;
+    const separator = this.productUrl.includes('?') ? '&' : '?';
+    const url = `${this.productUrl}${separator}variant=${variantId}&section_id=gift-popup-content`;
 
-    orderedOptions.forEach((option) => {
-      const group = document.createElement('div');
-      group.className = 'gift-popup__option';
+    try {
+      const html = await fetch(url, { headers: { Accept: 'text/html' } }).then((response) => response.text());
+      if (token !== this.requestToken) return;
 
-      const label = document.createElement('span');
-      label.className = 'gift-popup__option-label';
-      label.textContent = option.name;
-      group.appendChild(label);
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const content = doc.querySelector('[data-gift-popup-content]');
+      if (!content) return;
 
-      if (COLOR_OPTION_PATTERN.test(option.name)) {
-        group.appendChild(this.#buildSwatchControl(option));
-      } else {
-        group.appendChild(this.#buildSelectControl(option));
-      }
-
-      wrap.appendChild(group);
-    });
-  }
-
-  /** @param {{name: string, values: string[]}} option */
-  #buildSwatchControl(option) {
-    const list = document.createElement('div');
-    list.className = 'gift-popup__swatches';
-    list.setAttribute('role', 'group');
-    list.setAttribute('aria-label', option.name);
-
-    option.values.forEach((value) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'gift-popup__swatch';
-      button.textContent = value;
-      button.setAttribute('aria-pressed', String(this.selectedOptions[option.name] === value));
-      const swatchColor = colorNameToHex(value);
-      if (swatchColor) button.style.setProperty('--swatch-color', swatchColor);
-      button.addEventListener('click', () => {
-        this.selectedOptions[option.name] = value;
-        list.querySelectorAll('.gift-popup__swatch').forEach((el) => {
-          el.setAttribute('aria-pressed', String(el === button));
-        });
-        this.#syncVariant();
-      });
-      list.appendChild(button);
-    });
-
-    return list;
-  }
-
-  /** @param {{name: string, values: string[]}} option */
-  #buildSelectControl(option) {
-    const select = document.createElement('select');
-    select.className = 'gift-popup__select';
-    select.setAttribute('aria-label', option.name);
-
-    option.values.forEach((value) => {
-      const optionEl = document.createElement('option');
-      optionEl.value = value;
-      optionEl.textContent = value;
-      optionEl.selected = this.selectedOptions[option.name] === value;
-      select.appendChild(optionEl);
-    });
-
-    select.addEventListener('change', () => {
-      this.selectedOptions[option.name] = select.value;
-      this.#syncVariant();
-    });
-
-    return select;
-  }
-
-  #syncVariant() {
-    const { product, selectedOptions } = this;
-    const optionNames = product.options || [];
-
-    this.currentVariant =
-      product.variants.find((variant) =>
-        optionNames.every((name, index) => variant[`option${index + 1}`] === selectedOptions[name])
-      ) || null;
-
-    const priceEl = this.dialog.querySelector('[data-gift-popup-price]');
-    const addButton = this.dialog.querySelector('[data-gift-popup-add]');
-    const image = this.dialog.querySelector('[data-gift-popup-image]');
-
-    if (this.currentVariant) {
-      priceEl.textContent = formatMoney(this.currentVariant.price);
-      addButton.disabled = !this.currentVariant.available;
-      const variantImage = imageSrc(this.currentVariant.featured_image);
-      if (variantImage) image.src = variantImage;
-      this.#setError(this.currentVariant.available ? '' : 'This combination is sold out.');
-    } else {
-      priceEl.textContent = formatMoney(product.price);
-      addButton.disabled = true;
-      this.#setError('This combination is unavailable.');
+      this.body.innerHTML = content.innerHTML;
+      this.#afterRender();
+    } catch {
+      if (token !== this.requestToken) return;
+      this.body.innerHTML = '<p class="gift-popup__error">Something went wrong loading this product. Please try again.</p>';
     }
   }
 
-  #setError(message) {
-    const errorEl = this.dialog.querySelector('[data-gift-popup-error]');
-    errorEl.textContent = message;
-    errorEl.hidden = !message;
+  /** Wires up interactivity for content that was just fetched and injected. */
+  #afterRender() {
+    // The dialog's aria-labelledby points at whatever id lives here — set it here rather than
+    // in the fetched section so that section doesn't need to know the grid section's id.
+    const title = this.body.querySelector('[data-gift-popup-title]');
+    if (title) title.id = this.dialog.getAttribute('aria-labelledby') || '';
+
+    this.body.querySelectorAll('.gift-popup__swatch').forEach((el) => {
+      const button = /** @type {HTMLElement} */ (el);
+      const hex = colorNameToHex(button.dataset.value);
+      if (hex) button.style.setProperty('--swatch-color', hex);
+
+      button.addEventListener('click', () => {
+        const group = /** @type {HTMLElement|null} */ (button.closest('[data-option-index]'));
+        if (!group) return;
+        const index = Number(group.dataset.optionIndex);
+        if (Number.isNaN(index)) return;
+
+        this.selectedOptions[index] = button.dataset.value || '';
+        group.querySelectorAll('.gift-popup__swatch').forEach((swatchEl) => {
+          swatchEl.setAttribute('aria-pressed', String(swatchEl === button));
+        });
+        this.#onOptionChange();
+      });
+    });
+
+    this.body.querySelectorAll('.gift-popup__select').forEach((el) => {
+      const select = /** @type {HTMLSelectElement} */ (el);
+      select.addEventListener('change', () => {
+        const index = Number(select.dataset.optionIndex);
+        if (Number.isNaN(index)) return;
+
+        this.selectedOptions[index] = select.value;
+        this.#onOptionChange();
+      });
+    });
+
+    this.body.querySelector('[data-gift-popup-add]')?.addEventListener('click', () => this.addToCart());
+  }
+
+  #onOptionChange() {
+    const variant = this.#findVariant();
+    if (variant) this.#loadContent(variant.id);
   }
 
   /**
@@ -333,24 +255,25 @@ class GiftGuidePopup {
   #matchesCompanionTrigger() {
     if (!this.companionProduct || this.companionTriggerValues.length === 0) return false;
 
-    const selectedValues = Object.values(this.selectedOptions).map((value) => value.toLowerCase());
+    const selectedValues = this.selectedOptions.map((value) => (value || '').toLowerCase());
     return this.companionTriggerValues.every((trigger) => selectedValues.includes(trigger.toLowerCase()));
   }
 
   async addToCart() {
-    if (!this.currentVariant) return;
+    const addButton = /** @type {HTMLButtonElement|null} */ (this.body.querySelector('[data-gift-popup-add]'));
+    const variantId = Number(addButton?.dataset.variantId);
+    if (!addButton || !variantId) return;
 
-    const addButton = this.dialog.querySelector('[data-gift-popup-add]');
-    const labels = this.dialog.querySelectorAll('[data-gift-popup-add-label]');
+    const labels = this.body.querySelectorAll('[data-gift-popup-add-label]');
     addButton.disabled = true;
     labels.forEach((label) => (label.textContent = 'Adding…'));
 
-    const items = [{ id: this.currentVariant.id, quantity: 1 }];
+    const items = [{ id: variantId, quantity: 1 }];
 
-    if (this.#matchesCompanionTrigger()) {
+    if (this.#matchesCompanionTrigger() && this.companionProduct) {
       const companionVariant =
         this.companionProduct.variants.find((variant) => variant.available) || this.companionProduct.variants[0];
-      if (companionVariant && companionVariant.id !== this.currentVariant.id) {
+      if (companionVariant && companionVariant.id !== variantId) {
         items.push({ id: companionVariant.id, quantity: 1 });
       }
     }
@@ -395,7 +318,11 @@ class GiftGuidePopup {
       this.close();
     } catch (error) {
       deferred.reject(error);
-      this.#setError(error.message || 'Something went wrong. Please try again.');
+      const errorEl = /** @type {HTMLElement|null} */ (this.body.querySelector('[data-gift-popup-error]'));
+      if (errorEl) {
+        errorEl.textContent = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+        errorEl.hidden = false;
+      }
     } finally {
       addButton.disabled = false;
       labels.forEach((label) => (label.textContent = 'Add to cart'));

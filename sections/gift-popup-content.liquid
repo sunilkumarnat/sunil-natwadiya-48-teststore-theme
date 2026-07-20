@@ -1,0 +1,310 @@
+{% comment %}
+  Gift Popup Content — the Gift Guide Grid popup's dynamic body (image, title, price,
+  description, options, add-to-cart). Not placed in any template; fetched on demand
+  against a product URL via the Section Rendering API
+  (`{{ product.url }}?variant={id}&section_id=gift-popup-content`, see
+  assets/gift-guide-grid.js), so it always renders from `product`/`selected_variant`
+  through real Liquid/HTML rather than being built up in JS from a JSON blob.
+{% endcomment %}
+
+{% assign selected_variant = product.selected_or_first_available_variant %}
+{% assign display_image = selected_variant.featured_media.preview_image | default: product.featured_image %}
+{% capture color_options_html %}{% endcapture %}
+{% capture other_options_html %}{% endcapture %}
+
+<div data-gift-popup-content>
+  <div class="gift-popup__top">
+    <img
+      class="gift-popup__image"
+      data-gift-popup-image
+      src="{{ display_image | image_url: width: 240 }}"
+      alt="{{ product.title | escape }}"
+      width="120"
+      height="140"
+    >
+
+    <div class="gift-popup__header">
+      <h3 class="gift-popup__title" data-gift-popup-title>{{ product.title }}</h3>
+      <p class="gift-popup__price" data-gift-popup-price>{{ selected_variant.price | money }}</p>
+      <div class="gift-popup__description" data-gift-popup-description>{{ product.description }}</div>
+    </div>
+  </div>
+
+  <div class="gift-popup__options" data-gift-popup-options>
+    {% for option in product.options_with_values %}
+      {% assign option_name_downcase = option.name | downcase %}
+      {% assign selected_value = selected_variant.options[forloop.index0] %}
+      {% assign is_color_option = false %}
+      {% if option_name_downcase contains 'color' or option_name_downcase contains 'colour' %}
+        {% assign is_color_option = true %}
+      {% endif %}
+
+      {% capture option_html %}
+        <div class="gift-popup__option">
+          <span class="gift-popup__option-label">{{ option.name }}</span>
+          {% if is_color_option %}
+            <div class="gift-popup__swatches" role="group" aria-label="{{ option.name }}" data-option-index="{{ forloop.index0 }}">
+              {% for value in option.values %}
+                <button
+                  type="button"
+                  class="gift-popup__swatch"
+                  data-value="{{ value | escape }}"
+                  aria-pressed="{% if value == selected_value %}true{% else %}false{% endif %}"
+                >{{ value }}</button>
+              {% endfor %}
+            </div>
+          {% else %}
+            <select class="gift-popup__select" aria-label="{{ option.name }}" data-option-index="{{ forloop.index0 }}">
+              {% for value in option.values %}
+                <option value="{{ value | escape }}" {% if value == selected_value %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          {% endif %}
+        </div>
+      {% endcapture %}
+
+      {% if is_color_option %}
+        {% assign color_options_html = color_options_html | append: option_html %}
+      {% else %}
+        {% assign other_options_html = other_options_html | append: option_html %}
+      {% endif %}
+    {% endfor %}
+    {{ color_options_html }}{{ other_options_html }}
+  </div>
+
+  <p class="gift-popup__error" data-gift-popup-error {% if selected_variant.available %}hidden{% endif %}>
+    {% unless selected_variant.available %}This combination is sold out.{% endunless %}
+  </p>
+
+  <button
+    type="button"
+    class="gift-popup-cta gift-popup-cta--dark gift-popup__add"
+    data-gift-popup-add
+    data-variant-id="{{ selected_variant.id }}"
+    {% unless selected_variant.available %}disabled{% endunless %}
+  >
+    <span class="gift-popup-cta__fill" aria-hidden="true">
+      <span class="gift-popup-cta__fill-label" data-gift-popup-add-label>Add to cart</span>
+      {% render 'gift-guide-arrow-icon' %}
+    </span>
+    <span class="gift-popup-cta__label" data-gift-popup-add-label>Add to cart</span>
+    {% render 'gift-guide-arrow-icon' %}
+  </button>
+</div>
+
+{% stylesheet %}
+  /* Shared "fill sweep" CTA button — same mechanism as the banner section */
+  .gift-popup-cta,
+  .gift-popup-cta *,
+  .gift-popup-cta *::before,
+  .gift-popup-cta *::after {
+    box-sizing: border-box;
+  }
+
+  .gift-popup-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 45px;
+    padding: 0 24px;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-family: 'Jost', sans-serif;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .gift-popup-cta__fill,
+  .gift-popup-cta__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gift-popup-cta__fill {
+    position: absolute;
+    inset: 0;
+    padding: 0 24px;
+    justify-content: center;
+    overflow: hidden;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .gift-popup-cta:hover .gift-popup-cta__fill {
+    clip-path: inset(0 0 0 0);
+  }
+
+  .gift-popup-cta--dark {
+    background: var(--gift-dark);
+    color: #f5f5f5;
+  }
+
+  .gift-popup-cta--dark .gift-popup-cta__fill {
+    background: var(--gift-accent);
+    color: var(--gift-dark);
+  }
+
+  .gift-cta__arrow {
+    width: 24px;
+    height: 10px;
+    flex-shrink: 0;
+  }
+
+  .gift-popup-cta:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .gift-popup__top {
+    display: flex;
+    gap: 8px;
+  }
+
+  .gift-popup__image {
+    width: 120px;
+    height: 140px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f5f5f5;
+  }
+
+  .gift-popup__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding-right: 28px;
+  }
+
+  .gift-popup__title {
+    margin: 0;
+    font-weight: 300;
+    font-size: 1rem;
+  }
+
+  .gift-popup__price {
+    margin: 0;
+    font-family: 'Lustria', serif;
+    font-size: 1rem;
+  }
+
+  .gift-popup__description {
+    margin: 0;
+    font-weight: 300;
+    font-size: 0.75rem;
+    line-height: 1.1;
+    color: #333333;
+  }
+
+  .gift-popup__options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gift-popup__option-label {
+    display: block;
+    font-size: 1rem;
+    color: var(--gift-dark);
+    margin-bottom: 8px;
+  }
+
+  .gift-popup__swatches {
+    display: flex;
+    flex-wrap: wrap;
+    background: #ffffff;
+    border: 1px solid var(--gift-dark);
+  }
+
+  .gift-popup__swatch {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    border-right: 1px solid var(--gift-dark);
+    background: transparent;
+    padding: 11px 16px;
+    font-family: 'Jost', sans-serif;
+    font-size: 1rem;
+    text-transform: capitalize;
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+    /* The left accent bar always shows the option's own color, so every swatch is
+       identifiable before picking one — not just after. */
+    box-shadow: inset 3px 0 0 var(--swatch-color, var(--gift-dark));
+  }
+
+  .gift-popup__swatch:last-child {
+    border-right: none;
+  }
+
+  .gift-popup__swatch[aria-pressed='true'] {
+    /* Selected gets a stronger accent plus a fill, so it's still distinct from the
+       always-visible color bar on the other, unselected swatches. */
+    background: #000000;
+    color: #ffffff;
+    box-shadow: inset 5px 0 0 var(--swatch-color, var(--gift-dark));
+  }
+
+  .gift-popup__select {
+    width: 100%;
+    height: 41px;
+    background-color: #ffffff;
+    border: 1px solid var(--gift-dark);
+    border-radius: 0;
+    padding: 0 16px;
+    font-family: 'Jost', sans-serif;
+    font-size: 1rem;
+    color: var(--gift-dark);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6' fill='none'%3E%3Cpath d='M1 1L6 5L11 1' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    cursor: pointer;
+  }
+
+  .gift-popup__select:focus {
+    outline: 2px solid var(--gift-dark);
+    outline-offset: -2px;
+  }
+
+  .gift-popup__error {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #c0392b;
+  }
+
+  @media screen and (max-width: 749px) {
+    .gift-popup__top {
+      flex-direction: row;
+      gap: 4px;
+    }
+
+    .gift-popup__image {
+      width: 50%;
+      height: auto;
+    }
+
+    .gift-popup__header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      padding-right: 28px;
+      width: 50%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift Popup Content"
+}
+{% endschema %}
