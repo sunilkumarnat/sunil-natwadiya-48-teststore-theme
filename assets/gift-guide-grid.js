@@ -101,30 +101,46 @@ class GiftGuidePopup {
     this.#bindStaticEvents();
   }
 
-  /** @type {number} */
+  /**
+   * Background scroll handling while the popup is open — deliberately never touches
+   * `body`'s layout (no position: fixed, no overflow: hidden). That common trick resets
+   * scroll position on some mobile browsers and, worse, is a known cause of native form
+   * controls (like the size <select>) opening their dropdown in the wrong place — e.g.
+   * pinned to the top of the page — because the body no longer has a normal layout position.
+   *
+   * Three separate problems, three separate fixes:
+   * 1. `showModal()` itself asks the browser to scroll the dialog into view, which changes
+   *    window.scrollY as a native side effect — nothing to do with our own code.
+   * 2. `close()` (however it's triggered — our button, Escape, backdrop click) has the same
+   *    kind of native side effect on the way out, as focus returns to the page.
+   * 3. While open, touch/wheel input on the background is blocked outright so the page can't
+   *    be scrolled through behind the modal.
+   *
+   * For 1 and 2, the fix is the same shape: snapshot the scroll position going in, and force
+   * it back — after giving the browser's own scroll a frame to happen first — both right
+   * after opening and right after closing.
+   */
   #scrollY = 0;
 
-  /**
-   * Locks background scroll without jumping the page to the top. Just setting
-   * `overflow: hidden` on <body> resets scroll position on some mobile browsers, so instead
-   * the body is pinned in place with `position: fixed` at its current scroll offset.
-   */
+  #blockScroll = (event) => {
+    if (!this.dialog.contains(event.target)) event.preventDefault();
+  };
+
+  #restoreScrollPosition() {
+    requestAnimationFrame(() => window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' }));
+  }
+
   #lockScroll() {
     this.#scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${this.#scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
+    document.addEventListener('touchmove', this.#blockScroll, { passive: false });
+    document.addEventListener('wheel', this.#blockScroll, { passive: false });
+    this.#restoreScrollPosition();
   }
 
   #unlockScroll() {
-    document.body.style.removeProperty('position');
-    document.body.style.removeProperty('top');
-    document.body.style.removeProperty('left');
-    document.body.style.removeProperty('right');
-    // `behavior: 'instant'` matters here — the theme sets `scroll-behavior: smooth`
-    // globally, which would otherwise animate this restore into a visible scroll motion.
-    window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' });
+    document.removeEventListener('touchmove', this.#blockScroll);
+    document.removeEventListener('wheel', this.#blockScroll);
+    this.#restoreScrollPosition();
   }
 
   #readJson(scriptEl) {
