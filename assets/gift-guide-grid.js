@@ -84,7 +84,8 @@ class GiftGuidePopup {
   /** @param {HTMLElement} section */
   constructor(section) {
     this.section = section;
-    this.dialog = section.querySelector('[data-gift-popup]');
+    /** @type {HTMLDialogElement} */
+    this.dialog = /** @type {HTMLDialogElement} */ (section.querySelector('[data-gift-popup]'));
     this.companionProduct = this.#readJson(section.querySelector('[data-gift-companion-product]'));
     this.companionTriggerValues = (section.dataset.companionTriggerValues || '')
       .split(',')
@@ -111,20 +112,44 @@ class GiftGuidePopup {
    */
   #lockScroll() {
     this.#scrollY = window.scrollY;
+    this.#pinBody();
+  }
+
+  #unlockScroll() {
+    this.#releaseBody();
+    // `behavior: 'instant'` matters here — the theme sets `scroll-behavior: smooth`
+    // globally, which would otherwise animate this restore into a visible scroll motion.
+    window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' });
+  }
+
+  #pinBody() {
     document.body.style.position = 'fixed';
     document.body.style.top = `-${this.#scrollY}px`;
     document.body.style.left = '0';
     document.body.style.right = '0';
   }
 
-  #unlockScroll() {
+  #releaseBody() {
     document.body.style.removeProperty('position');
     document.body.style.removeProperty('top');
     document.body.style.removeProperty('left');
     document.body.style.removeProperty('right');
-    // `behavior: 'instant'` matters here — the theme sets `scroll-behavior: smooth`
-    // globally, which would otherwise animate this restore into a visible scroll motion.
-    window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' });
+  }
+
+  /**
+   * `body { position: fixed }` is a known cause of a native <select>'s dropdown opening in
+   * the wrong place (e.g. pinned to the top of the page) on mobile, because the body no
+   * longer has a normal layout position for the browser to anchor against. Rather than
+   * touching the popup's overall scroll-lock, the fix is scoped tightly to the moment a
+   * select is actually interacted with: release the pin just before its dropdown would open,
+   * and reinstate it once the selection is made — the rest of the popup is unaffected.
+   */
+  #pauseBodyPinForSelect() {
+    if (this.dialog.open) this.#releaseBody();
+  }
+
+  #resumeBodyPinForSelect() {
+    if (this.dialog.open) this.#pinBody();
   }
 
   #readJson(scriptEl) {
@@ -290,6 +315,12 @@ class GiftGuidePopup {
       this.selectedOptions[option.name] = select.value;
       this.#syncVariant();
     });
+
+    // Release the popup's body-pin just for the moment this select's native dropdown is
+    // open, then reinstate it — see #pauseBodyPinForSelect for why.
+    select.addEventListener('mousedown', () => this.#pauseBodyPinForSelect());
+    select.addEventListener('touchstart', () => this.#pauseBodyPinForSelect(), { passive: true });
+    select.addEventListener('blur', () => this.#resumeBodyPinForSelect());
 
     return select;
   }
