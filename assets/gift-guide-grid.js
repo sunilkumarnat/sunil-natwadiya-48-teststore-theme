@@ -234,11 +234,7 @@ class GiftGuidePopup {
       label.textContent = option.name;
       group.appendChild(label);
 
-      if (COLOR_OPTION_PATTERN.test(option.name)) {
-        group.appendChild(this.#buildSwatchControl(option));
-      } else {
-        group.appendChild(this.#buildSelectControl(option));
-      }
+      group.appendChild(this.#buildSwatchControl(option));
 
       wrap.appendChild(group);
     });
@@ -270,28 +266,6 @@ class GiftGuidePopup {
     });
 
     return list;
-  }
-
-  /** @param {{name: string, values: string[]}} option */
-  #buildSelectControl(option) {
-    const select = document.createElement('select');
-    select.className = 'gift-popup__select';
-    select.setAttribute('aria-label', option.name);
-
-    option.values.forEach((value) => {
-      const optionEl = document.createElement('option');
-      optionEl.value = value;
-      optionEl.textContent = value;
-      optionEl.selected = this.selectedOptions[option.name] === value;
-      select.appendChild(optionEl);
-    });
-
-    select.addEventListener('change', () => {
-      this.selectedOptions[option.name] = select.value;
-      this.#syncVariant();
-    });
-
-    return select;
   }
 
   #syncVariant() {
