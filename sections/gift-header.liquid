@@ -40,7 +40,7 @@
       <p class="gift-header__logo">{{ section.settings.logo_text }}</p>
     </div>
 
-    <div class="gift-header__row gift-header__row--bottom" id="GiftHeaderContent-{{ section.id }}" hidden>
+    <div class="gift-header__row gift-header__row--bottom" id="GiftHeaderContent-{{ section.id }}">
       {% if section.settings.announcement_text != blank %}
         <p class="gift-header__announcement">
           <span class="gift-header__announcement-desktop">{{ section.settings.announcement_text }}</span>
@@ -86,11 +86,6 @@
   }
 
   .gift-header__row {
-    display: contents;
-  }
-
-  /* Desktop always shows the full bar inline, regardless of the mobile-only `hidden` state. */
-  .gift-header__row--bottom[hidden] {
     display: contents;
   }
 
@@ -219,17 +214,23 @@
     .gift-header__row--bottom {
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      padding: 15px 10px;
       text-align: center;
-      background: #F2F2F2;
+      background: #f2f2f2;
+      /* Closed by default on every page load — no state is remembered between loads.
+         Driven entirely by the .is-open class; JS only ever toggles that class. */
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      gap: 0;
+      padding: 0 10px;
+      transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, gap 0.3s ease;
     }
 
-    /* Closed by default on every page load (the `hidden` attribute) — no state is
-       remembered between loads. The toggle button removes it via `aria-controls`. */
-    .gift-header__row--bottom[hidden] {
-      display: none;
-      padding: 0px;
+    .gift-header__row--bottom.is-open {
+      max-height: 220px;
+      opacity: 1;
+      gap: 12px;
+      padding: 15px 10px;
     }
 
     .gift-header__toggle {

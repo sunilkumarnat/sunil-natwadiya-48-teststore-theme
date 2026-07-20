@@ -124,6 +124,12 @@ class GiftGuidePopup {
       if (event.target === this.dialog) this.close();
     });
     this.dialog?.querySelector('[data-gift-popup-add]')?.addEventListener('click', () => this.addToCart());
+
+    // The dialog's native `close` event fires however it closes (our close(), Escape key,
+    // backdrop click), so unlocking scroll here — rather than only in close() — catches all of them.
+    this.dialog?.addEventListener('close', () => {
+      document.body.style.removeProperty('overflow');
+    });
   }
 
   /** @param {object} product */
@@ -165,6 +171,8 @@ class GiftGuidePopup {
     } else {
       this.dialog.setAttribute('open', '');
     }
+
+    document.body.style.overflow = 'hidden';
   }
 
   close() {
