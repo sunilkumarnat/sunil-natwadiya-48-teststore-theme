@@ -122,7 +122,9 @@ class GiftGuidePopup {
     document.body.style.removeProperty('top');
     document.body.style.removeProperty('left');
     document.body.style.removeProperty('right');
-    window.scrollTo(0, this.#scrollY);
+    // `behavior: 'instant'` matters here — the theme sets `scroll-behavior: smooth`
+    // globally, which would otherwise animate this restore into a visible scroll motion.
+    window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' });
   }
 
   #readJson(scriptEl) {
