@@ -320,7 +320,7 @@
 
   .gift-popup__body {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 16px;
     padding: 35px 20px;
   }
@@ -466,15 +466,15 @@
     }
 
     .gift-popup {
-      position: fixed;
-      inset: auto 0 0 0;
-      margin: 0;
-      width: 100%;
-      max-width: 100%;
+      /* Centered like desktop (native <dialog> centering), just narrower with a 15px
+         gap on each side instead of a full-bleed bottom sheet. */
+      width: calc(100vw - 30px);
+      max-width: calc(100vw - 30px);
     }
 
     .gift-popup__top {
-      flex-direction: column;
+      flex-direction: row;
+      gap: 4px
     }
 
     .gift-popup__image {
