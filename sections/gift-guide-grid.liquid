@@ -320,9 +320,9 @@
 
   .gift-popup__body {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 16px;
-    padding: 20px;
+    padding: 35px 20px;
   }
 
   .gift-popup__top {
@@ -399,6 +399,9 @@
     text-align: left;
     cursor: pointer;
     position: relative;
+    /* The left accent bar always shows the option's own color, so every swatch is
+       identifiable before picking one — not just after. */
+    box-shadow: inset 3px 0 0 var(--swatch-color, var(--gift-dark));
   }
 
   .gift-popup__swatch:last-child {
@@ -406,10 +409,11 @@
   }
 
   .gift-popup__swatch[aria-pressed='true'] {
-    /* The left accent bar shows the option's own color; the faint inset ring keeps the
-       selected state visible even for very light colors like white. */
-    background: #f5f5f5;
-    box-shadow: inset 3px 0 0 var(--swatch-color, var(--gift-dark));
+    /* Selected gets a stronger accent plus a fill, so it's still distinct from the
+       always-visible color bar on the other, unselected swatches. */
+    background: #000000;
+    color: #ffffff;
+    box-shadow: inset 5px 0 0 var(--swatch-color, var(--gift-dark));
   }
 
   .gift-popup__select {
@@ -417,6 +421,7 @@
     height: 41px;
     background-color: #ffffff;
     border: 1px solid var(--gift-dark);
+    border-radius: 0;
     padding: 0 16px;
     font-family: 'Jost', sans-serif;
     font-size: 1rem;
@@ -425,6 +430,12 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6' fill='none'%3E%3Cpath d='M1 1L6 5L11 1' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 16px center;
+    cursor: pointer;
+  }
+
+  .gift-popup__select:focus {
+    outline: 2px solid var(--gift-dark);
+    outline-offset: -2px;
   }
 
   .gift-popup__error {
