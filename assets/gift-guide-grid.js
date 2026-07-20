@@ -101,6 +101,30 @@ class GiftGuidePopup {
     this.#bindStaticEvents();
   }
 
+  /** @type {number} */
+  #scrollY = 0;
+
+  /**
+   * Locks background scroll without jumping the page to the top. Just setting
+   * `overflow: hidden` on <body> resets scroll position on some mobile browsers, so instead
+   * the body is pinned in place with `position: fixed` at its current scroll offset.
+   */
+  #lockScroll() {
+    this.#scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.#scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+  }
+
+  #unlockScroll() {
+    document.body.style.removeProperty('position');
+    document.body.style.removeProperty('top');
+    document.body.style.removeProperty('left');
+    document.body.style.removeProperty('right');
+    window.scrollTo(0, this.#scrollY);
+  }
+
   #readJson(scriptEl) {
     if (!scriptEl) return null;
     try {
@@ -127,9 +151,7 @@ class GiftGuidePopup {
 
     // The dialog's native `close` event fires however it closes (our close(), Escape key,
     // backdrop click), so unlocking scroll here — rather than only in close() — catches all of them.
-    this.dialog?.addEventListener('close', () => {
-      document.body.style.removeProperty('overflow');
-    });
+    this.dialog?.addEventListener('close', () => this.#unlockScroll());
   }
 
   /** @param {object} product */
@@ -166,13 +188,13 @@ class GiftGuidePopup {
     this.#syncVariant();
     this.#setError('');
 
+    this.#lockScroll();
+
     if (typeof this.dialog.showModal === 'function') {
       this.dialog.showModal();
     } else {
       this.dialog.setAttribute('open', '');
     }
-
-    document.body.style.overflow = 'hidden';
   }
 
   close() {
