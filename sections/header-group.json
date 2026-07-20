@@ -21,7 +21,7 @@
         "announcement_button_link": "",
         "accent_color": "#fff544",
         "dark_color": "#000000",
-        "soft_bg_color": "#F7F7F7"
+        "soft_bg_color": "#f7f7f7"
       }
     },
     "header_announcements_9jGBFp": {
@@ -45,7 +45,6 @@
       "block_order": [
         "announcement_BxgCk9"
       ],
-      "disabled": true,
       "name": "t:names.announcement_bar",
       "settings": {
         "speed": 5,
@@ -95,7 +94,6 @@
           "blocks": {}
         }
       },
-      "disabled": true,
       "settings": {
         "logo_position": "left",
         "menu_position": "left",
