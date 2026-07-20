@@ -102,48 +102,54 @@ class GiftGuidePopup {
     this.#bindStaticEvents();
   }
 
-  /**
-   * Background scroll handling while the popup is open — deliberately never touches
-   * `body`'s layout (no position: fixed, no overflow: hidden). That common trick resets
-   * scroll position on some mobile browsers and, worse, is a known cause of native form
-   * controls (like the size <select>) opening their dropdown in the wrong place — e.g.
-   * pinned to the top of the page — because the body no longer has a normal layout position.
-   *
-   * Two separate problems, two separate fixes:
-   * 1. `showModal()` itself asks the browser to scroll the dialog into view, which changes
-   *    window.scrollY as a native side effect — confirmed by calling it directly with no
-   *    other code involved. `close()` has the same kind of side effect on the way out. Both
-   *    are corrected by snapshotting scroll position and forcing it back a frame later.
-   * 2. While open, touch/wheel input on the background is blocked outright so the page can't
-   *    be scrolled through behind the modal.
-   */
+  /** @type {number} */
   #scrollY = 0;
 
-  #blockScroll = (event) => {
-    // A dialog has no visual area of its own outside its content box, so interacting with
-    // its ::backdrop (everything surrounding the visible popup) reports the <dialog> element
-    // itself as event.target — which `.contains()` treats as "inside" (a node contains
-    // itself). Excluding that exact case is what makes backdrop scroll attempts actually
-    // get blocked, while real content inside the popup (e.g. the select) still works.
-    const isRealContent = event.target !== this.dialog && this.dialog.contains(event.target);
-    if (!isRealContent) event.preventDefault();
-  };
-
-  #restoreScrollPosition() {
-    requestAnimationFrame(() => window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' }));
-  }
-
+  /**
+   * Locks background scroll without jumping the page to the top. Just setting
+   * `overflow: hidden` on <body> resets scroll position on some mobile browsers, so instead
+   * the body is pinned in place with `position: fixed` at its current scroll offset.
+   */
   #lockScroll() {
     this.#scrollY = window.scrollY;
-    document.addEventListener('touchmove', this.#blockScroll, { passive: false });
-    document.addEventListener('wheel', this.#blockScroll, { passive: false });
-    this.#restoreScrollPosition();
+    this.#pinBody();
   }
 
   #unlockScroll() {
-    document.removeEventListener('touchmove', this.#blockScroll);
-    document.removeEventListener('wheel', this.#blockScroll);
-    this.#restoreScrollPosition();
+    this.#releaseBody();
+    // `behavior: 'instant'` matters here — the theme sets `scroll-behavior: smooth`
+    // globally, which would otherwise animate this restore into a visible scroll motion.
+    window.scrollTo({ top: this.#scrollY, left: 0, behavior: 'instant' });
+  }
+
+  #pinBody() {
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.#scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+  }
+
+  #releaseBody() {
+    document.body.style.removeProperty('position');
+    document.body.style.removeProperty('top');
+    document.body.style.removeProperty('left');
+    document.body.style.removeProperty('right');
+  }
+
+  /**
+   * `body { position: fixed }` is a known cause of a native <select>'s dropdown opening in
+   * the wrong place (e.g. pinned to the top of the page) on mobile, because the body no
+   * longer has a normal layout position for the browser to anchor against. Rather than
+   * touching the popup's overall scroll-lock, the fix is scoped tightly to the moment a
+   * select is actually interacted with: release the pin just before its dropdown would open,
+   * and reinstate it once the selection is made — the rest of the popup is unaffected.
+   */
+  #pauseBodyPinForSelect() {
+    if (this.dialog.open) this.#releaseBody();
+  }
+
+  #resumeBodyPinForSelect() {
+    if (this.dialog.open) this.#pinBody();
   }
 
   #readJson(scriptEl) {
@@ -309,6 +315,12 @@ class GiftGuidePopup {
       this.selectedOptions[option.name] = select.value;
       this.#syncVariant();
     });
+
+    // Release the popup's body-pin just for the moment this select's native dropdown is
+    // open, then reinstate it — see #pauseBodyPinForSelect for why.
+    select.addEventListener('mousedown', () => this.#pauseBodyPinForSelect());
+    select.addEventListener('touchstart', () => this.#pauseBodyPinForSelect(), { passive: true });
+    select.addEventListener('blur', () => this.#resumeBodyPinForSelect());
 
     return select;
   }
