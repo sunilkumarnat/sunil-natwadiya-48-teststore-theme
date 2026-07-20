@@ -86,37 +86,35 @@
   </div>
 
   <dialog class="gift-popup" data-gift-popup aria-labelledby="GiftPopupTitle-{{ section.id }}">
-    <div class="gift-popup__inner">
-      <button type="button" class="gift-popup__close" data-gift-popup-close aria-label="Close">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-        </svg>
-      </button>
+    <button type="button" class="gift-popup__close" data-gift-popup-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M1 1L15 15M15 1L1 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </button>
 
-      <div class="gift-popup__body">
-        <div class="gift-popup__top">
-          <img class="gift-popup__image" data-gift-popup-image src="" alt="" width="120" height="140">
+    <div class="gift-popup__body">
+      <div class="gift-popup__top">
+        <img class="gift-popup__image" data-gift-popup-image src="" alt="" width="120" height="140">
 
-          <div class="gift-popup__header">
-            <h3 class="gift-popup__title" id="GiftPopupTitle-{{ section.id }}" data-gift-popup-title></h3>
-            <p class="gift-popup__price" data-gift-popup-price></p>
-            <div class="gift-popup__description" data-gift-popup-description></div>
-          </div>
+        <div class="gift-popup__header">
+          <h3 class="gift-popup__title" id="GiftPopupTitle-{{ section.id }}" data-gift-popup-title></h3>
+          <p class="gift-popup__price" data-gift-popup-price></p>
+          <div class="gift-popup__description" data-gift-popup-description></div>
         </div>
-
-        <div class="gift-popup__options" data-gift-popup-options></div>
-
-        <p class="gift-popup__error" data-gift-popup-error hidden></p>
-
-        <button type="button" class="gift-popup-cta gift-popup-cta--dark gift-popup__add" data-gift-popup-add>
-          <span class="gift-popup-cta__fill" aria-hidden="true">
-            <span class="gift-popup-cta__fill-label" data-gift-popup-add-label>Add to cart</span>
-            {% render 'gift-guide-arrow-icon' %}
-          </span>
-          <span class="gift-popup-cta__label" data-gift-popup-add-label>Add to cart</span>
-          {% render 'gift-guide-arrow-icon' %}
-        </button>
       </div>
+
+      <div class="gift-popup__options" data-gift-popup-options></div>
+
+      <p class="gift-popup__error" data-gift-popup-error hidden></p>
+
+      <button type="button" class="gift-popup-cta gift-popup-cta--dark gift-popup__add" data-gift-popup-add>
+        <span class="gift-popup-cta__fill" aria-hidden="true">
+          <span class="gift-popup-cta__fill-label" data-gift-popup-add-label>Add to cart</span>
+          {% render 'gift-guide-arrow-icon' %}
+        </span>
+        <span class="gift-popup-cta__label" data-gift-popup-add-label>Add to cart</span>
+        {% render 'gift-guide-arrow-icon' %}
+      </button>
     </div>
   </dialog>
 
@@ -284,11 +282,7 @@
 
   /* Popup */
   .gift-popup {
-    /* No `position` override here: the native top-layer UA stylesheet centers a modal
-       dialog via `position: fixed`, and any author `position` declaration on the dialog
-       element itself beats that UA rule, turning it into a normal in-flow box that drags
-       around with page scroll instead of staying fixed to the viewport. The close button's
-       anchor lives on .gift-popup__inner instead so this element stays un-positioned. */
+    position: relative;
     border: none;
     padding: 0;
     width: 311px;
@@ -300,12 +294,6 @@
 
   .gift-popup::backdrop {
     background: rgba(0, 0, 0, 0.4);
-  }
-
-  .gift-popup__inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
   }
 
   .gift-popup__close {
